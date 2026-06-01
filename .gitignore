@@ -1,0 +1,19 @@
+# Local environment
+.venv/
+
+# Source data (large; lives locally only — see README)
+jsonOutputs/
+
+# Generated artifacts
+labels/
+dataset/
+runs/
+viz/
+
+# Model weights
+*.pt
+*.onnx
+
+# Python
+__pycache__/
+*.pyc

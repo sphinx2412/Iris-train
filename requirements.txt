@@ -1,0 +1,14 @@
+# Data prep (lightweight) — needed to run tools/*.py
+numpy
+opencv-python
+pyyaml
+
+# Training / inference — install on the training box (RTX 3070 12 GB)
+ultralytics
+onnx
+onnxruntime
+
+# torch/torchvision are pulled in by ultralytics, but for a CUDA build install
+# them explicitly FIRST from the PyTorch CUDA index, e.g.:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+# then:  pip install -r requirements.txt
