@@ -47,6 +47,9 @@ python tools/make_split.py
 # 4. Train  (on the RTX 3060 12 GB box)
 yolo detect train model=yolo11m.pt data=dataset/data.yaml imgsz=1280 epochs=100 batch=8 patience=20 device=0
 
+# 4b. Resume an interrupted run (instead of step 4; do NOT re-run the split first)
+yolo detect train resume model=runs/detect/train/weights/last.pt
+
 # 5. Honest eval on the frozen test split (per-class precision/recall, mAP)
 yolo detect val model=runs/detect/train/weights/best.pt data=dataset/data.yaml split=test
 
@@ -65,4 +68,9 @@ yolo export model=runs/detect/train/weights/best.pt format=onnx imgsz=1280
 - **Split is contiguous-by-id, not random** — photos span only ~4 days and same-person
   repeats occur only among neighbouring ids; a buffer is dropped at each junction to prevent
   leakage. The `test` block is frozen — don't re-run the split against it once training starts.
+- **Training is resumable.** A `last.pt` checkpoint is written at the end of every epoch under
+  `runs/detect/train/weights/`. If the console is closed / the run crashes, continue with step 4b
+  (`4b_resume_train.bat`) instead of step 4 — re-running step 4 starts from scratch. `resume=True`
+  reuses `args.yaml` and the same frozen split, so don't re-run the split in between. You lose only
+  the partial current epoch, not completed ones.
 - `jsonOutputs/` originals are large (≈5760×3240). Decide deliberately whether to commit them.
