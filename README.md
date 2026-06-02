@@ -2,7 +2,7 @@
 
 Train a fast YOLO11 detector for **iris** and **pupil** circles `(cx, cy, r)` from eye
 photos, to replace the slow SAM-based pipeline. This repo holds the data-prep tooling and
-the training runbook. See `plan train.md` for the full rationale.
+the training runbook.
 
 > Scope of the current init: scaffolding + scripts only. **No training has been run.**
 
@@ -21,8 +21,8 @@ runs/               # training outputs  (gitignored)
 
 ## Setup
 
-The local `.venv` exists but has **no packages installed yet**. On the training box
-(RTX 3070 12 GB), install with a CUDA torch build first:
+Run `0_setup_install.bat` to create `.venv` (if missing) and install everything. To do it by
+hand on the training box (RTX 3060 12 GB), install a CUDA torch build first:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
@@ -44,8 +44,8 @@ python tools/visualize_labels.py --n 5
 # 3. Block split by id (+ buffer) -> dataset/ + data.yaml. test = last contiguous block.
 python tools/make_split.py
 
-# 4. Train  (on the RTX 3070 12 GB box)
-yolo detect train model=yolo11m.pt data=dataset/data.yaml imgsz=1280 epochs=100 batch=12 patience=20 device=0
+# 4. Train  (on the RTX 3060 12 GB box)
+yolo detect train model=yolo11m.pt data=dataset/data.yaml imgsz=1280 epochs=100 batch=8 patience=20 device=0
 
 # 5. Honest eval on the frozen test split (per-class precision/recall, mAP)
 yolo detect val model=runs/detect/train/weights/best.pt data=dataset/data.yaml split=test
@@ -58,9 +58,10 @@ yolo export model=runs/detect/train/weights/best.pt format=onnx imgsz=1280
 
 - **Photo count is never hardcoded** — every script counts the actual files at runtime and
   logs the real numbers (annotation is ongoing; ~1600 is only a target).
-- **GPU caveat:** the `batch`/`imgsz` defaults above target the **RTX 3070 12 GB** training
-  box. This dev machine is an RTX 2070 8 GB; if you train here, lower `batch`, use
-  `imgsz=1024`, or `batch=-1` (auto). Alternative: `yolo11s.pt` at `imgsz=1536`.
+- **GPU caveat:** the `imgsz=1280` default targets the **RTX 3060 12 GB** training box,
+  where `batch=8` fits (batch=12 OOMs — yolo11m@1280 needs ~15–18 GB). This dev machine is
+  an RTX 2070 8 GB; if you train here, lower `batch` further, use `imgsz=1024`, or `batch=-1`
+  (auto). Alternative: `yolo11s.pt` at `imgsz=1536`.
 - **Split is contiguous-by-id, not random** — photos span only ~4 days and same-person
   repeats occur only among neighbouring ids; a buffer is dropped at each junction to prevent
   leakage. The `test` block is frozen — don't re-run the split against it once training starts.
