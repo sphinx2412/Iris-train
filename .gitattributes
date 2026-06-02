@@ -1,0 +1,9 @@
+# Normalize all text files to LF in the repo and working tree.
+* text=auto eol=lf
+
+# Binary assets — never touch line endings.
+*.jpg  binary
+*.jpeg binary
+*.png  binary
+*.pt   binary
+*.onnx binary
