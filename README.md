@@ -55,7 +55,19 @@ yolo detect val model=runs/detect/train/weights/best.pt data=dataset/data.yaml s
 
 # 6. Export
 yolo export model=runs/detect/train/weights/best.pt format=onnx imgsz=1280
+
+# 7. Inference — consume best.onnx, draw predicted circles / write JSON annotations
+python tools/infer_onnx.py jsonOutputs --model runs/detect/train/weights/best.onnx --viz viz_infer --out infer_out
 ```
+
+Step 7 is the *consumer* side: a lightweight `onnxruntime` script (no torch/ultralytics)
+that loads `best.onnx`, detects iris/pupil, runs NMS (export has none), and inverts each
+bbox back to a circle `(cx, cy, r)`. `--out` writes `<stem>.json` in the **same schema as
+the input annotations** (drop-in for the old SAM output); `--viz` draws overlays to compare
+against `_debug_*.jpg`. Install the runtime first: `pip install numpy opencv-python
+onnxruntime` (GPU optional: `onnxruntime-gpu`). `7_infer_onnx.bat` wraps it — the model path
+is an editable `MODEL=` variable at the top (defaults to `runs\detect\train\weights\best.onnx`)
+and can also be passed as the first argument.
 
 ## Notes
 

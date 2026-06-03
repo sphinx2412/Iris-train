@@ -9,6 +9,8 @@ labels/
 dataset/
 runs/
 viz/
+viz_infer/
+infer_out/
 
 # Model weights
 *.pt

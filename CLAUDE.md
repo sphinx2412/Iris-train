@@ -9,10 +9,11 @@ Data-prep tooling + a training runbook for a **YOLO11 detector** that finds **ir
 millisecond inference. **No training has been run yet**; this repo is scaffolding + scripts.
 `README.md` is the English runbook.
 
-## Pipeline (the whole project is these six ordered steps)
+## Pipeline (the whole project is these seven ordered steps)
 
 Numbered `*.bat` files wrap each step (they `cd` to repo root and activate `.venv`); the
-underlying Python is below. Steps 1–3 are CPU-only data prep; 4–6 need a GPU + `ultralytics`.
+underlying Python is below. Steps 1–3 are CPU-only data prep; 4–6 need a GPU + `ultralytics`;
+step 7 is the model consumer and only needs `onnxruntime` (no torch/ultralytics).
 
 ```powershell
 python tools/json_to_yolo.py            # 1. jsonOutputs/*.json  -> labels/<stem>.txt
@@ -21,10 +22,12 @@ python tools/make_split.py              # 3. contiguous-by-id split -> dataset/ 
 yolo detect train model=yolo11m.pt data=dataset/data.yaml imgsz=1280 epochs=100 batch=8 patience=20 device=0
 yolo detect val   model=runs/detect/train/weights/best.pt data=dataset/data.yaml split=test
 yolo export       model=runs/detect/train/weights/best.pt format=onnx imgsz=1280
+python tools/infer_onnx.py jsonOutputs --model runs/detect/train/weights/best.onnx --viz viz_infer --out infer_out  # 7. consume best.onnx -> circles / JSON
 ```
 
-`labels/`, `dataset/`, `runs/`, `viz/`, `*.pt`, `*.onnx` are all generated and gitignored.
-There is no build, lint, or test suite — verification is the visual/metric checks below.
+`labels/`, `dataset/`, `runs/`, `viz/`, `viz_infer/`, `infer_out/`, `*.pt`, `*.onnx` are all
+generated and gitignored. There is no build, lint, or test suite — verification is the
+visual/metric checks below.
 
 ## Setup
 
@@ -44,7 +47,12 @@ Data-prep only (no GPU): `pip install numpy opencv-python pyyaml`.
 - **Circle ↔ bbox is the central trick.** Manual annotations are circles; YOLO needs boxes.
   `circle_to_yolo_line` (`tools/json_to_yolo.py`) maps a circle to `cx, cy, w=h=2r`; at
   inference you invert it as `r = (w+h)/4`. iris=class 0, pupil=class 1; they overlap
-  concentrically and YOLO handles that fine.
+  concentrically and YOLO handles that fine. The inference-side inversion lives in
+  `tools/infer_onnx.py` (`detect`), a lightweight `onnxruntime` consumer of `best.onnx`.
+  Note `6_export_onnx.bat` exports **without `nms=True`**, so `infer_onnx.py` does the
+  confidence threshold + NMS itself (`cv2.dnn.NMSBoxes`). Its `--out` writes `<stem>.json`
+  in the *same schema as the input annotations* (with `detection.tier: "yolo-onnx"`), so it
+  drop-in replaces the old SAM annotation output.
 - **Coordinates are normalized against `source.width/height` from the JSON, never the image
   file's pixels.** `json_to_yolo.py` never decodes the image — it only checks the file exists.
   Keep this invariant; reading dimensions from the image would silently break alignment.
