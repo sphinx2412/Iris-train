@@ -10,7 +10,9 @@ dataset/
 runs/
 viz/
 viz_infer/
+viz_infer_s/
 infer_out/
+infer_out_s/
 
 # Model weights
 *.pt

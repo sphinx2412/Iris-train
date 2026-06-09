@@ -3,7 +3,7 @@ numpy
 opencv-python
 pyyaml
 
-# Training / inference — install on the training box (RTX 3070 12 GB)
+# Training / inference — install on the training box (RTX 3060 12 GB)
 ultralytics
 onnx
 onnxruntime
