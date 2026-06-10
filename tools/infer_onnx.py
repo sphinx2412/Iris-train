@@ -68,10 +68,12 @@ def letterbox(img, new: int):
     return padded, ratio, left, top
 
 
-def preprocess(img, imgsz: int):
+def preprocess(img, imgsz: int, dtype=np.float32):
     padded, ratio, dw, dh = letterbox(img, imgsz)
     blob = cv2.cvtColor(padded, cv2.COLOR_BGR2RGB).transpose(2, 0, 1)  # HWC -> CHW
     blob = np.ascontiguousarray(blob[None], dtype=np.float32) / 255.0  # add batch, scale
+    if dtype != np.float32:  # fp16 model -> feed float16 (scale done in fp32 for precision)
+        blob = blob.astype(dtype)
     return blob, ratio, dw, dh
 
 
@@ -82,6 +84,7 @@ def decode(out, imgsz: int, conf_thr: float):
     rest = per-class scores (no objectness in YOLO11). Robust to either axis order.
     """
     arr = np.squeeze(out, axis=0) if out.ndim == 3 else out
+    arr = arr.astype(np.float32)  # fp16 model outputs float16; lift for stable coord/NMS math
     if arr.shape[0] < arr.shape[1]:  # [channels, anchors] -> [anchors, channels]
         arr = arr.T
     boxes = arr[:, :4].astype(np.float32)
@@ -112,9 +115,9 @@ def nms_per_class(boxes_xywh, scores, classes, iou_thr: float, conf_thr: float):
     return kept
 
 
-def detect(session, input_name, img, imgsz, conf_thr, iou_thr):
+def detect(session, input_name, img, imgsz, conf_thr, iou_thr, dtype=np.float32):
     """Return a list of dicts: {cls, name, cx, cy, r, conf} in original-image pixels."""
-    blob, ratio, dw, dh = preprocess(img, imgsz)
+    blob, ratio, dw, dh = preprocess(img, imgsz, dtype)
     out = session.run(None, {input_name: blob})[0]
     boxes, scores, classes = decode(out, imgsz, conf_thr)
     if len(boxes) == 0:
@@ -214,8 +217,10 @@ def main() -> None:
         raise SystemExit(f"Model not found: {args.model}")
 
     session = ort.InferenceSession(str(args.model), providers=args.providers)
-    input_name = session.get_inputs()[0].name
-    print(f"Loaded {args.model}  (providers: {session.get_providers()})")
+    in_meta = session.get_inputs()[0]
+    input_name = in_meta.name
+    in_dtype = np.float16 if "float16" in in_meta.type else np.float32  # match fp16/fp32 model
+    print(f"Loaded {args.model}  input={in_meta.type}  (providers: {session.get_providers()})")
 
     images = gather_images(args.inputs)
     print(f"Running inference on {len(images)} image(s)  imgsz={args.imgsz} "
@@ -231,7 +236,7 @@ def main() -> None:
             print(f"  SKIP {ip.name}: cannot decode image")
             continue
         H, W = img.shape[:2]
-        dets = detect(session, input_name, img, args.imgsz, args.conf, args.iou)
+        dets = detect(session, input_name, img, args.imgsz, args.conf, args.iou, in_dtype)
 
         if dets:
             summary = ", ".join(
