@@ -8,5 +8,5 @@ REM  "train_s" in the path below to match.
 REM ============================================================
 cd /d "%~dp0"
 call .venv\Scripts\activate.bat
-yolo export model="%~dp0runs\detect\train_s\weights\best.pt" format=onnx imgsz=1280
+yolo export model="%~dp0runs\detect\train_s\weights\best.pt" format=onnx imgsz=640
 pause

@@ -14,5 +14,5 @@ REM  to restart clean delete/rename the old run folder first.
 REM ============================================================
 cd /d "%~dp0"
 call .venv\Scripts\activate.bat
-yolo detect train model=yolo11s.pt data="%~dp0dataset\data.yaml" imgsz=1280 epochs=100 batch=-1 patience=20 device=0 project="%~dp0runs\detect" name=train_s
+yolo detect train model=yolo11s.pt data="%~dp0dataset\data.yaml" imgsz=640 epochs=100 batch=0.85 patience=20 device=0 project="%~dp0runs\detect" name=train_s
 pause

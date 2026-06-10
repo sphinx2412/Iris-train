@@ -10,5 +10,5 @@ REM  name=val_s keeps the eval output separate from the m run's val.
 REM ============================================================
 cd /d "%~dp0"
 call .venv\Scripts\activate.bat
-yolo detect val model="%~dp0runs\detect\train_s\weights\best.pt" data="%~dp0dataset\data.yaml" split=test project="%~dp0runs\detect" name=val_s
+yolo detect val model="%~dp0runs\detect\train_s\weights\best.pt" data="%~dp0dataset\data.yaml" imgsz=640 split=test project="%~dp0runs\detect" name=val_s
 pause

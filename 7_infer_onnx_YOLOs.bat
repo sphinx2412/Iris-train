@@ -16,5 +16,5 @@ call .venv\Scripts\activate.bat
 set "MODEL=%~dp0runs\detect\train_s\weights\best.onnx"
 if not "%~1"=="" set "MODEL=%~1"
 
-python tools\infer_onnx.py "%~dp0jsonOutputs" --model "%MODEL%" --viz "%~dp0viz_infer_s" --out "%~dp0infer_out_s"
+python tools\infer_onnx.py "%~dp0jsonOutputs" --model "%MODEL%" --imgsz 640 --viz "%~dp0viz_infer_s" --out "%~dp0infer_out_s"
 pause
